@@ -13,12 +13,13 @@ double a = millis();
 double c; 
 
 char ftime[6];
-int pomodoroCount = 10;
+int pomodoroCount = 0;
 
 const int pomodoroDuration = 25 * 60;
 const int shortBreak = 5 * 60;
 const int longBreak = 20 * 60;
 const int longBreakInterval = 4;
+int buzzerDuration = 0;
 
 typedef enum {STOPPED, WORKING, BREAK} StateType;
 StateType curState = STOPPED;
@@ -44,17 +45,27 @@ void setup() {
   printStatus();
 }
 
+void stopTimer() {
+  curState = STOPPED;
+  a = millis();
+  ptime = 0;
+}
 void loop() {
 
   delay(100);
 
+  if (buzzerDuration > 0) {
+    buzzerDuration--;
+  } else {
+    noTone(Buzzer);
+  }
   LeftBtnState = digitalRead(LeftBtn);
   RightBtnState = digitalRead(RightBtn);
 
   if (curState == STOPPED) {
+    a = millis();
     if (LeftBtnState) {
       curState = WORKING;
-      pomodoroCount = 20;
     }
 
     if (RightBtnState) {
@@ -62,15 +73,18 @@ void loop() {
     }
   } else if (curState == WORKING) {
     if (RightBtnState) {
-      curState = STOPPED;
-      a = millis();
-      ptime = 0;
+      stopTimer();
     } else {
       c = millis();
       ptime = (c - a) / 1000;
     }
+
+    if (ptime > pomodoroDuration) {
+      stopTimer();
+      pomodoroCount++;
+      tone(Buzzer, 800);
+      buzzerDuration = 10;
+    }
   }
   printStatus();
-
-
 }
